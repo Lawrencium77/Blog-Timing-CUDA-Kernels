@@ -10,7 +10,7 @@ In this blog, we present a comprehensive guide to the tips & tricks needed to re
 
 PyTorch executes GPU based kernels asynchronously. Whilst a CUDA kernel runs on GPU, the CPU continues to queue up further kernels behind it. This prevents being bottlenecked by general overhead costs such as launching kernels and those associated with the Python interpreter.
 
-This has implications for timing GPU operations. If we take a naïve approach we end up simply timing the kernel launch, and not the time it takes for a kernel to execute. The common solution is to call torch.cuda.synchronize() before taking a timing measurement. This waits for all kernels in all CUDA streams to complete. In other words, it stalls the host thread until the GPU finishes all assigned tasks. Here's an example:
+This has implications for timing GPU operations. If we take a naïve approach we end up simply timing the kernel launch, and not the time taken for a kernel to execute. The common solution is to call `torch.cuda.synchronize()` before taking a timing measurement. This waits for all kernels in all CUDA streams to complete. In other words, it stalls the host thread until the GPU finishes all assigned tasks. Here's an example:
 
 
 ```python
@@ -72,7 +72,6 @@ This image illustrates these ideas:
 A further improvement we can make to our above examples is to include warmup steps prior to doing timed runs. This is needed to discard overheads only incurred at the start of a training or inference run, for example:
 
 ·      Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered
-
 ·      On-the-fly microbenchmarking carried out by torch.cudnn.benchmark when selecting optimal convolution kernel for a given input shape
 
 Here's a simple example:

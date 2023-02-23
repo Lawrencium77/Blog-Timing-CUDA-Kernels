@@ -6,13 +6,12 @@ However, larger models are both memory intensive and slow. To combat this, there
 
 In this blog, we present a comprehensive guide to the tips & tricks needed to reliably time operations in PyTorch, whilst avoiding common pitfalls. Getting this right and extracting the best possible performance is critical to Speechmatics' ability to offer game changing ASR accuracy in a real-time setting.
 
-## Timing on CPU
+## Host-Device Synchronization
 
-### Host-Device Synchronization
+PyTorch executes GPU based kernels asynchronously. Whilst a CUDA kernel runs on GPU, the CPU continues to queue up further kernels behind it. This prevents being bottlenecked by general overhead costs such as launching kernels and those associated with the Python interpreter.
 
-As is well known, PyTorch executes GPU based kernels asynchronously. Whilst a CUDA kernel runs on GPU, the CPU continues to queue up further kernels behind it. This prevents being bottlenecked by general overhead costs such as launching kernels and those associated with the Python interpreter.
+This has implications for timing GPU operations. If we take a naïve approach we end up simply timing the kernel launch, and not the time it takes for a kernel to execute. The common solution is to call torch.cuda.synchronize() before taking a timing measurement. This waits for all kernels in all CUDA streams to complete. In other words, it stalls the host thread until the GPU finishes all assigned tasks. Here's an example:
 
-This has implications for timing GPU operations. If we take a naïve approach we end up simply timing the kernel launch, and not the time taken for a kernel to execute. The common solution is to call `torch.cuda.synchronize()` before taking a timing measurement. This waits for all kernels in all CUDA streams to complete. In other words, it stalls the host thread until the GPU finishes all assigned tasks. Here's an example:
 
 ```python
 import torch
@@ -42,16 +41,10 @@ for _ in range(10):
     sync_times.append(end_time - start_time)
 ```
 
-## Timing on GPU
-When timing on CPU, we are not just timing kernel execution. We also account for time associated with overhead costs, as described above.
+## CUDA events
+When combining explicit synchronization points with perf_counter, we are not just timing kernel execution. This also includes the overhead associated with the kernel launch, as described above. Additional synchronization may also be undesirable when trying to profile in a production level setup, as we want to avoid skewing results by affecting the overall performance of the system.
 
-But sometimes we care only about the kernel timings themselves. This section describes a series of tricks that can help in achieving accurate measurements.
-
-### CUDA events
-
-When combining explicit synchronization points with perf_counter, we are not just timing kernel execution. This also includes the overhead associated with the kernel launch, as described above. Creating additional synchronization points may also be undesirable when trying to time in a production-level setup.
-
-CUDA Events are a neat way to prevent us from timing kernel launch overhead and creating unnecessary synchronization points. Consider the following code:
+CUDA Events are a neat way to avoid unnecessary synchronization points and hide kernel launch overhead. Consider the following code:
 
 ```python
 start_event = torch.cuda.Event(enable_timing=True)

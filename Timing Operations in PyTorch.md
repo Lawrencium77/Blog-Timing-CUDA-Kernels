@@ -71,8 +71,9 @@ This image illustrates these ideas:
 
 A further improvement we can make to our above examples is to include warmup steps prior to doing timed runs. This is needed to discard overheads only incurred at the start of a training or inference run, for example:
 
-·      Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered
-·      On-the-fly microbenchmarking carried out by torch.cudnn.benchmark when selecting optimal convolution kernel for a given input shape
+* Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered
+* On-the-fly microbenchmarking carried out by torch.cudnn.benchmark when selecting optimal convolution kernel for a given input shape
+* 
 
 Here's a simple example:
 
@@ -134,7 +135,63 @@ def reset_clock_speed():
 
 We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it makes the assumption that there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. When we are timing lightwight kernels that are fast to execute this assumption can break down. This can lead to spurious results which contain launch overhead in the CUDA events delta, and is illustrated in the diagram below.
 
-Luckily there are solutions, the simplest is to apply backpressure to the command queue to ensure that the the kernel and it's events are enqueued together, rather than being executed before the next command even has a chance to make it onto the queue. A naive appraoch to this would be to launch a sufficiently expensive kernel prior to the events/kernel we are interested in, to create a backlog. A cleaner solution would be to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's __nanosleep or torch.cuda._sleep.
+Luckily there are solutions, the simplest is to apply backpressure to the command queue to ensure that the the kernel and it's events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue. A naive approach to this would be to launch a sufficiently expensive kernel prior to the events/kernel we are interested in, to create a backlog. A cleaner solution would be to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's __nanosleep or torch.cuda._sleep.
+
+```python
+set_clock_speed()
+
+for _ in range(10):
+    run_kernel() # don't record time
+
+start_event = torch.cuda.Event(enable_timing=True)
+end_event = torch.cuda.Event(enable_timing=True)
+ 
+times = []
+for _ in range(10):
+    flush_cache()
+    
+    torch.cuda._sleep(1_000_000)
+    start_event.record()
+    
+    run_kernel()
+    
+    end_event.record()
+    torch.cuda.synchronize()
+    times.append(start_event.elapsed_time(end_event))
+    
+reset_clock_speed()
+```
+
+A second solution is to use CUDA graphs. This minimizes the launch overhead by joining a series of independent kernel launches into a single kernel. Note that we execute the target kernel multiple times within the graph capture to amortize the cost of the launch overhead.
+
+```python
+set_clock_speed()
+
+for _ in range(10):
+    run_kernel() # don't record time
+    
+# capture CUDA graph
+graph = torch.cuda.CUDAGraph()
+with torch.cuda.graph(graph):
+    for _ in range(100):
+        run_kernel()
+
+start_event = torch.cuda.Event(enable_timing=True)
+end_event = torch.cuda.Event(enable_timing=True)
+ 
+times = []
+for _ in range(10):
+
+    start_event.record()
+    
+    graph.replay()
+    
+    end_event.record()
+    torch.cuda.synchronize()
+    times.append(start_event.elapsed_time(end_event))
+    
+reset_clock_speed()
+```
 
 ## References
 

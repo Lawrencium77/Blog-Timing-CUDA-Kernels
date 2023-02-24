@@ -8,7 +8,7 @@ In this blog, we present a comprehensive guide to the tips & tricks needed to re
 
 ## Host-Device Synchronization
 
-PyTorch executes GPU based kernels asynchronously. Whilst a CUDA kernel runs on GPU, the CPU continues to queue up further kernels behind it. This prevents being bottlenecked by general overhead costs such as launching kernels and those associated with the Python interpreter.
+PyTorch executes GPU kernels asynchronously. Whilst a CUDA kernel runs on GPU, the CPU continues to queue up further kernels behind it. This prevents being bottlenecked by general overhead costs such as launching kernels and those associated with the Python interpreter.
 
 This has implications for timing GPU operations. If we take a naïve approach we end up simply timing the kernel launch, and not the time taken for a kernel to execute. The common solution is to call `torch.cuda.synchronize()` before taking a timing measurement. This waits for all kernels in all CUDA streams to complete. In other words, it stalls the host thread until the GPU finishes all assigned tasks. Here's an example:
 
@@ -73,7 +73,7 @@ A further improvement we can make to our above examples is to include warmup ste
 
 * Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered
 * On-the-fly microbenchmarking carried out by torch.cudnn.benchmark when selecting optimal convolution kernel for a given input shape
-* 
+* Lazy loading of kernels into the CUDA context with `CUDA_MODULE_LOADING=LAZY` & CUDA 11.7+
 
 Here's a simple example:
 
@@ -131,11 +131,13 @@ def reset_clock_speed():
 
 ### Cache flush
 
-### __nanosleep / CUDA graphs
+
+
+### Sleep / CUDA graphs
 
 We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it makes the assumption that there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. When we are timing lightwight kernels that are fast to execute this assumption can break down. This can lead to spurious results which contain launch overhead in the CUDA events delta, and is illustrated in the diagram below.
 
-Luckily there are solutions, the simplest is to apply backpressure to the command queue to ensure that the the kernel and it's events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue. A naive approach to this would be to launch a sufficiently expensive kernel prior to the events/kernel we are interested in, to create a backlog. A cleaner solution would be to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's __nanosleep or torch.cuda._sleep.
+Luckily there are solutions, the simplest is to apply backpressure to the command queue to ensure that the the kernel and it's events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue. A naive approach to this would be to launch a sufficiently expensive kernel prior to the events/kernel we are interested in, to create a backlog. A cleaner solution would be to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's `__nanosleep` or `torch.cuda._sleep()`.
 
 ```python
 set_clock_speed()

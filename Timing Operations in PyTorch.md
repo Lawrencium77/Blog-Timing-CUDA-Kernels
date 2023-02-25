@@ -140,7 +140,7 @@ If the input data are large the constant recreation could also down the dev loop
 x = torch.empty(int(40 * (1024 ** 2)), dtype=torch.int8, device='cuda')
 
 def flush_cache():
-    x._zero() 
+    x.zero_() 
  ```
 
 ### Sleep / CUDA graphs

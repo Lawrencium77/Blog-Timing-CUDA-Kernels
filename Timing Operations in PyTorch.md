@@ -131,7 +131,7 @@ def reset_clock_speed():
 
 ### Cache flush
 
-Another import consideration is to ensure that the GPU memory caches are cleared between timing calls. This avoids the possibility of repeated kernels executions exploiting cache hits and artificically reducing latency. One simple solution is to pass different input data for each pass, but we need to be careful that we are covering all bases and, for example profiling when a `torch.nn.Linear` it would be insufficient to swap out the input data as some of the (static) weights could still persist in the cache across runs. 
+Another import consideration is to ensure that the GPU memory caches are cleared between timing calls. This avoids the possibility of repeated kernels executions exploiting cache hits and artificically reducing latency. One simple solution is to pass different input data for each pass, but we need to be careful that we are covering all bases, for example if profiling a `torch.nn.Linear` it could be insufficient to swap out the input data as some of the (static) weights may still persist in the cache across runs. 
 
 If the input data are large the constant recreation could also down the dev loop, so a more robust solution is to flush the cache between passes. The example below is based on Triton DSL [6]. It works by writing sufficient data such that any existing cache lines are overwritten, as the L2 cache on Nvidia GPUs uses a write-back policy this means the `zeros` data will initially be written to the L2 cache.
 

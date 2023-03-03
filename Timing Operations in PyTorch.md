@@ -13,9 +13,9 @@
 
 If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed.
 
-However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
+However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Regardless of the approach, timing each operation in a computational graph is essential.
 
-Doing so isn't trivial when GPUs are involved - and in this blog, we present a comprehensive guide to the tips and tricks required to get accurate and repeatable results.
+Doing so isn't trivial - there is a set of tricks needed to get accurate & repeatable results. In this blog, we present a comprehensive guide to each of these.
 
 ### Host-Device Synchronization
 
@@ -170,7 +170,7 @@ We previously saw that CUDA events hide the overhead of launching a kernel (the 
 
 When we are timing lightwight kernels that are fast to execute, this assumption can break down. This can cause spurious results which contain launch overhead in the CUDA events delta, and illustrated here:
 
-![](_attachments/Screenshot%202023-03-03%20at%2012.42.32.png)
+![](_attachments/Screenshot%202023-03-03%20at%2014.44.47.png)
 
 Luckily, there are solutions. The simplest is to apply "backpressure" to the command queue. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
 
@@ -235,9 +235,7 @@ reset_clock_speed()
 ```
 
 ### PyTorch Profiler
-Whilst timing kernels in isolation is incredibly useful, it doesn't always tell the whole story. The complementary approach of visually inspecting the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) trace can be an invaluable tool in spotting unexpected behaviour. If there is a problem in your code that is causing slowdowns, it's often seen when looking at the profiler trace. 
-
-The example below illustrates a kernel dispatch bug which led to a rogue host-device synchronization point (coloured green). This resulted in gaps of no GPU utilization between blocks of kernels being executed.
+As a last point, we have found the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) to be an invaluable tool in spotting unexpected behaviour. If there is a bug in your code that is causing slowdowns, it's often seen when looking at the profiler trace. In particular, we've used it to identify:
 
 * Rogue synchronization points 
 * Lightweight kernels causing spurious results (see [Sleep / CUDA graphs](#Sleep%20/%20CUDA%20graphs))

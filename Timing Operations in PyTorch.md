@@ -13,7 +13,7 @@
 
 If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed.
 
-However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
+However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture ([FlashAttention](https://arxiv.org/abs/2205.14135), [ZeroQuant](https://arxiv.org/abs/2206.01861)). Others involve algorithmic changes (Pruning, Sparsity). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
 
 Doing so isn't trivial when GPUs are involved. In this blog, we present a comprehensive guide to the tips & tricks required to get accurate and repeatable results.
 
@@ -120,7 +120,7 @@ for _ in range(10):
 
 So far, we have focused on making our profiling results accurate. But how can we make them reproducible? GPU clock speed can vary significantly according to limits on temperature and power consumption. As such, fixing the clock can help in this regard. We have found this to be especially important for our work at Speechmatics.
 
-Here's an example of how to implement this in Python. We use a similar approach to that of OpenAI's Triton Domain-Specific Language (DSL) [6] and Deepmind's AlphaTensor [7] repositories.
+Here's an example of how to implement this in Python. We use a similar approach to that of OpenAI's [Triton](https://triton-lang.org/master/index.html) Domain-Specific Language (DSL) and Deepmind's [AlphaTensor](https://www.nature.com/articles/s41586-022-05172-4) repositories.
 
 ```python
 import os
@@ -154,7 +154,7 @@ One caveat is that selecting a clock speed with `nvidia-smi` doesn't guarantee
 
 Another import consideration is to ensure that the GPU memory caches are cleared between timing calls. This avoids the possibility of repeated kernel executions exploiting cache hits and artificically reducing latency. One simple solution is to pass different input data for each pass, but we need to be careful that we are covering all bases. For example, when profiling a `torch.nn.Linear` it may be insufficient to swap out the input data as some of the (static) weights could still persist in the cache across runs. 
 
-If the input tensors are large, the constant recreation could also slow down the dev loop. A more robust solution is to explicitly flush the cache between passes. The example below is based on Triton DSL [6]. It works by writing sufficient data such that any existing cache lines are overwritten, as the L2 cache on Nvidia GPUs uses a [write-back policy](https://en.wikipedia.org/wiki/Cache_(computing)#Writing_policies) this means the `zeros` data will initially be written to the L2 cache.
+If the input tensors are large, the constant recreation could also slow down the dev loop. A more robust solution is to explicitly flush the cache between passes. The example below is based on [Triton DSL](https://triton-lang.org/master/index.html). It works by writing sufficient data such that any existing cache lines are overwritten, as the L2 cache on Nvidia GPUs uses a [write-back policy](https://en.wikipedia.org/wiki/Cache_(computing)#Writing_policies) this means the `zeros` data will initially be written to the L2 cache.
 
 ```python
 # allocating 40MB to match L2 cache size on A100
@@ -243,8 +243,6 @@ The example below illustrates a kernel dispatch bug which led to a rogue host-de
 
 ### References
 
-Lilian Weng blog ([https://lilianweng.github.io/posts/2023-01-10-inference-optimization/](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/))  
-Flash Attention  
-ZeroQuant
-Triton Language ([https://github.com/openai/triton/blob/ba0198326e280192bff9cd656a0a231b613901fa/python/triton/testing.py#L420](https://github.com/openai/triton/blob/ba0198326e280192bff9cd656a0a231b613901fa/python/triton/testing.py#L420))  
-AlphaTensor ([https://github.com/deepmind/alphatensor/blob/1949163da3bef7e3eb268a3ac015fd1c2dbfc767/benchmarking/run_gpu_benchmark.py#L56](https://github.com/deepmind/alphatensor/blob/1949163da3bef7e3eb268a3ac015fd1c2dbfc767/benchmarking/run_gpu_benchmark.py#L56))
+1. Dao, T., Fu, D.Y., Ermon, S., Rudra, A. and Ré, C., 2022. Flashattention: Fast and memory-efficient exact attention with io-awareness. _arXiv preprint arXiv:2205.14135_.
+2. Yao, Z., Aminabadi, R.Y., Zhang, M., Wu, X., Li, C. and He, Y., 2022. Zeroquant: Efficient and affordable post-training quantization for large-scale transformers. _arXiv preprint arXiv:2206.01861_.
+3. Fawzi, A., Balog, M., Huang, A., Hubert, T., Romera-Paredes, B., Barekatain, M., Novikov, A., R Ruiz, F.J., Schrittwieser, J., Swirszcz, G. and Silver, D., 2022. Discovering faster matrix multiplication algorithms with reinforcement learning. _Nature_, _610_(7930), pp.47-53.

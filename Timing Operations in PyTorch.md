@@ -174,7 +174,7 @@ When we are timing lightwight kernels that are fast to execute, this assumption 
 
 Luckily, there are solutions. The simplest is to apply "backpressure" to the command queue. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
 
-![](Screenshot%202023-03-03%20at%2012.47.46.png)
+![](_attachments/Screenshot%202023-03-03%20at%2012.47.46.png)
 
 How should we actually do this? A naïve approach is to launch a sufficiently expensive kernel prior to the operations we are interested in, thus creating a backlog. A cleaner solution is to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's `__nanosleep` or `torch.cuda._sleep()`:
 
@@ -235,13 +235,14 @@ reset_clock_speed()
 ```
 
 ### PyTorch Profiler
-As a last point, we have found the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) to be an invaluable tool in spotting unexpected behaviour. If there is a bug in your code that is causing slowdowns, it can often be identified by looking at the profiler trace. In particular, we've used it to identify:
+As a last point, we have found the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) to be an invaluable tool in spotting unexpected behaviour. If there is a bug in your code that is causing slowdowns, it's often seen when looking at the profiler trace. In particular, we've used it to identify:
 
 * Rogue synchronization points 
-* Lightweight kernels causing spurious results (see [[#Sleep / CUDA graphs]])
-* 
+* Lightweight kernels causing spurious results (see [Sleep / CUDA graphs](#Sleep%20/%20CUDA%20graphs))
 
+The diagram below gives an idea of what this might look like. An host-device synchronization is occurring prior to the launch of a particular kernel (coloured green), which in this case was due to a bug in the kernel dispatch:
 
+![](_attachments/MicrosoftTeams-image%20(8)%202.png)
 
 ### References
 

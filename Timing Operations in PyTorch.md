@@ -62,9 +62,9 @@ for _ in range(10):
 ```
 
 ## CUDA events
-When combining explicit synchronization points with `perf_counter`, we are not just timing kernel execution. This also includes the overhead associated with the kernel launch, as described above. Additional synchronization may also be undesirable when trying to profile in a production level setup, as we want to avoid skewing results by affecting the overall performance of the system.
+When combining explicit synchronization points with `perf_counter`, we don't just time kernel execution. We also include some overhead associated with kernel launch. In addition, using synchronization points may skew results by slowing the overall system.
 
-CUDA Events are a neat way to avoid unnecessary synchronization points and hide kernel launch overhead. Consider the following code:
+[CUDA Events](https://pytorch.org/docs/stable/generated/torch.cuda.Event.html#:~:text=CUDA%20events%20are%20synchronization%20markers,or%20exported%20to%20another%20process.) are a neat way to avoid unnecessary synchronization points and hide kernel launch overhead. Here's an example:
 
 ```python
 start_event = torch.cuda.Event(enable_timing=True)
@@ -81,11 +81,11 @@ for _ in range(10):
     times.append(start_event.elapsed_time(end_event))
 ```
 
-We begin by instantiating two `torch.cuda.Event()` objects. The `record()` method essentially puts a time stamp in the stream of kernel execution. Doing so before and after the operations that we wish to time means we can measure exactly how long it takes for them to execute. At the end of the block we wish to time, we must include a `synchronize()` statement before running `start_time.elapsed_time(end_event)`. Omitting this means that the CPU would attempt to calculate the elapsed time before the GPU has finished its work, yielding a `RuntimeError`.
+We begin by instantiating two `torch.cuda.Event()` objects. The `record()` method essentially puts a time stamp in the stream of kernel execution. We do so before and after the operations that we wish to time. At the end, we must include a `synchronize()` statement before running `start_time.elapsed_time(end_event)`. Omitting this means that the CPU would attempt to calculate the elapsed time before the GPU has finished its work, yielding a `RuntimeError`.
 
 This image illustrates these ideas:
 
-![](_attachments/IMG_0994.jpg)
+![](_attachments/Screenshot%202023-03-03%20at%2012.13.23.png)
 
 ### Warmup steps
 

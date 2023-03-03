@@ -1,17 +1,37 @@
+# Table of Contents
+1. [Introduction](#Introduction)
+2. [Host-Device Synchronization](#Host-Device%20Synchronization)
+3. [CUDA events](#CUDA%20events)
+4. [Warmup steps](#Warmup%20steps)
+5. [Fixed clocks](#Fixed%20clocks)
+6. [Cache flush](#Cache%20flush)
+7. [Sleep / CUDA graphs](#Sleep%20/%20CUDA%20graphs)
+8. [PyTorch Profiler](#PyTorch%20Profiler)
+
 ## Introduction
 
 If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed.
 
-However, larger models are memory-hungry and slow. To combat this, there is a range of optimization techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Underlying all of these is the need to time each operation in a computational graph.
+However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Regardless of the approach, timing each operation in a computational graph is essential.
 
-In this blog, we present a comprehensive guide to the tips & tricks needed to reliably time operations in PyTorch. 
+Doing so isn't trivial - there is a set of tricks needed to get accurate & repeatable results. In this blog, we present a comprehensive guide to each of these.
 
 ## Host-Device Synchronization
 
+Our starting point is host-device synchronization. 
+
 PyTorch executes GPU kernels asynchronously. Whilst a CUDA kernel runs on GPU, the CPU continues to queue up further kernels behind it. This prevents being bottlenecked by general overhead costs such as launching kernels and those associated with the Python interpreter.
 
-This has implications for timing GPU operations. If we take a naïve approach we end up simply timing the kernel launch, and not the time taken for a kernel to execute. The common solution is to call `torch.cuda.synchronize()` before taking a timing measurement. This waits for all kernels in all CUDA streams to complete. In other words, it stalls the host thread until the GPU finishes all assigned tasks. Here's an example:
+It also has implications for timing GPU operations. A naïve approach may end up timing the kernel *launch* instead of kernel *execution*, like so:
 
+![](_attachments/Screenshot%202023-03-03%20at%2011.50.04.png)
+
+
+The common solution is to call `torch.cuda.synchronize()` before taking a timing measurement. This waits for all kernels in all CUDA streams to complete:
+
+![](_attachments/Screenshot%202023-03-03%20at%2011.50.21.png)
+
+Here's an example in PyTorch:
 
 ```python
 import torch
@@ -205,6 +225,8 @@ for _ in range(10):
 reset_clock_speed()
 ```
 
+## PyTorch Profiler
+
 ## References
 
 Lilian Weng blog post ([https://lilianweng.github.io/posts/2023-01-10-inference-optimization/](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/))  
@@ -212,4 +234,4 @@ Flash Attention
 ZeroQuant
 Triton Language ([https://github.com/openai/triton/blob/ba0198326e280192bff9cd656a0a231b613901fa/python/triton/testing.py#L420](https://github.com/openai/triton/blob/ba0198326e280192bff9cd656a0a231b613901fa/python/triton/testing.py#L420))  
 AlphaTensor ([https://github.com/deepmind/alphatensor/blob/1949163da3bef7e3eb268a3ac015fd1c2dbfc767/benchmarking/run_gpu_benchmark.py#L56](https://github.com/deepmind/alphatensor/blob/1949163da3bef7e3eb268a3ac015fd1c2dbfc767/benchmarking/run_gpu_benchmark.py#L56))
-Caches https://en.wikipedia.org/wiki/Cache_(computing)
+ Caches https://en.wikipedia.org/wiki/Cache_(computing)

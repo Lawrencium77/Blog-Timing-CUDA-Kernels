@@ -207,7 +207,7 @@ reset_clock_speed()
 
 ## References
 
-Lilian Weng blog post ([https://lilianweng.github.io/posts/2023-01-10-inference-optimization/](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/))  
+Lilian Weng blog ([https://lilianweng.github.io/posts/2023-01-10-inference-optimization/](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/))  
 Flash Attention  
 ZeroQuant
 Triton Language ([https://github.com/openai/triton/blob/ba0198326e280192bff9cd656a0a231b613901fa/python/triton/testing.py#L420](https://github.com/openai/triton/blob/ba0198326e280192bff9cd656a0a231b613901fa/python/triton/testing.py#L420))  

@@ -13,9 +13,9 @@
 
 If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed.
 
-However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Regardless of the approach, timing each operation in a computational graph is essential.
+However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
 
-Doing so isn't trivial - there is a set of tricks needed to get accurate & repeatable results. In this blog, we present a comprehensive guide to each of these.
+Doing so isn't trivial when GPUs are involved. In this blog, we present a comprehensive guide to the tips & tricks required to get accurate and repeatable results.
 
 ### Host-Device Synchronization
 
@@ -235,12 +235,9 @@ reset_clock_speed()
 ```
 
 ### PyTorch Profiler
-As a last point, we have found the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) to be an invaluable tool in spotting unexpected behaviour. If there is a bug in your code that is causing slowdowns, it's often seen when looking at the profiler trace. In particular, we've used it to identify:
+Whilst timing kernels in isolation is incredibly useful, it doesn't always tell the whole story. The complementary approach of visually inspecting the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) trace can be an invaluable tool in spotting unexpected behaviour. If there is a problem in your code that is causing slowdowns, it's often seen when looking at the profiler trace. 
 
-* Lightweight kernels causing spurious results (see [Sleep / CUDA graphs](#Sleep%20/%20CUDA%20graphs))
-* Rogue synchronization points 
-
-The diagram below gives an idea of what the latter might look like. A host-device synchronization is occurring prior to the launch of a particular kernel (coloured green), which in this case was due to a bug in the kernel dispatch. Note that we see gaps in SM Efficiency associated with kernel launches:
+The example below illustrates a kernel dispatch bug which led to a rogue host-device synchronization point (coloured green). Note that we see gaps in SM Efficiency associated with kernel launches:
 
 ![](_attachments/MicrosoftTeams-image%20(8)%202.png)
 

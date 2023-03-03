@@ -170,7 +170,7 @@ We previously saw that CUDA events hide the overhead of launching a kernel (the 
 
 When we are timing lightwight kernels that are fast to execute, this assumption can break down. This can cause spurious results which contain launch overhead in the CUDA events delta, and illustrated here:
 
-![](_attachments/Screenshot%202023-03-03%20at%2014.44.47.png)
+![](_attachments/Screenshot%202023-03-03%20at%2015.11.21.png)
 
 Luckily, there are solutions. The simplest is to apply "backpressure" to the command queue. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
 

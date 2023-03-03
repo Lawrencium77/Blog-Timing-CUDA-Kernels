@@ -8,7 +8,7 @@ In this blog, we present a comprehensive guide to the tips & tricks needed to re
 
 ## Host-Device Synchronization
 
-PyTorch executes GPU based kernels asynchronously. Whilst a CUDA kernel runs on GPU, the CPU continues to queue up further kernels behind it. This prevents being bottlenecked by general overhead costs such as launching kernels and those associated with the Python interpreter.
+PyTorch executes GPU kernels asynchronously. Whilst a CUDA kernel runs on GPU, the CPU continues to queue up further kernels behind it. This prevents being bottlenecked by general overhead costs such as launching kernels and those associated with the Python interpreter.
 
 This has implications for timing GPU operations. If we take a naïve approach we end up simply timing the kernel launch, and not the time taken for a kernel to execute. The common solution is to call `torch.cuda.synchronize()` before taking a timing measurement. This waits for all kernels in all CUDA streams to complete. In other words, it stalls the host thread until the GPU finishes all assigned tasks. Here's an example:
 
@@ -73,7 +73,7 @@ A further improvement we can make to our above examples is to include warmup ste
 
 * Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered
 * On-the-fly microbenchmarking carried out by torch.cudnn.benchmark when selecting optimal convolution kernel for a given input shape
-* 
+* Lazy loading of kernels into the CUDA context with `CUDA_MODULE_LOADING=LAZY` & CUDA 11.7+
 
 Here's a simple example:
 
@@ -131,11 +131,23 @@ def reset_clock_speed():
 
 ### Cache flush
 
-### __nanosleep / CUDA graphs
+Another import consideration is to ensure that the GPU memory caches are cleared between timing calls. This avoids the possibility of repeated kernels executions exploiting cache hits and artificically reducing latency. One simple solution is to pass different input data for each pass, but we need to be careful that we are covering all bases, for example when profiling a `torch.nn.Linear` it may be insufficient to swap out the input data as some of the (static) weights could still persist in the cache across runs. 
+
+If the input data are large the constant recreation could also slow down the dev loop, so a more robust solution is to explicitly flush the cache between passes. The example below is based on Triton DSL [6]. It works by writing sufficient data such that any existing cache lines are overwritten, as the L2 cache on Nvidia GPUs uses a write-back policy [7] this means the `zeros` data will initially be written to the L2 cache.
+
+```python
+# allocating 40MB to match L2 cache size on A100
+x = torch.empty(int(40 * (1024 ** 2)), dtype=torch.int8, device='cuda')
+
+def flush_cache():
+    x.zero_() 
+ ```
+
+### Sleep / CUDA graphs
 
 We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it makes the assumption that there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. When we are timing lightwight kernels that are fast to execute this assumption can break down. This can lead to spurious results which contain launch overhead in the CUDA events delta, and is illustrated in the diagram below.
 
-Luckily there are solutions, the simplest is to apply backpressure to the command queue to ensure that the the kernel and it's events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue. A naive approach to this would be to launch a sufficiently expensive kernel prior to the events/kernel we are interested in, to create a backlog. A cleaner solution would be to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's __nanosleep or torch.cuda._sleep.
+Luckily there are solutions, the simplest is to apply backpressure to the command queue to ensure that the the kernel and it's events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue. A naive approach to this would be to launch a sufficiently expensive kernel prior to the events/kernel we are interested in, to create a backlog. A cleaner solution would be to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's `__nanosleep` or `torch.cuda._sleep()`.
 
 ```python
 set_clock_speed()
@@ -200,3 +212,4 @@ Flash Attention
 ZeroQuant
 Triton Language ([https://github.com/openai/triton/blob/ba0198326e280192bff9cd656a0a231b613901fa/python/triton/testing.py#L420](https://github.com/openai/triton/blob/ba0198326e280192bff9cd656a0a231b613901fa/python/triton/testing.py#L420))  
 AlphaTensor ([https://github.com/deepmind/alphatensor/blob/1949163da3bef7e3eb268a3ac015fd1c2dbfc767/benchmarking/run_gpu_benchmark.py#L56](https://github.com/deepmind/alphatensor/blob/1949163da3bef7e3eb268a3ac015fd1c2dbfc767/benchmarking/run_gpu_benchmark.py#L56))
+Caches https://en.wikipedia.org/wiki/Cache_(computing)

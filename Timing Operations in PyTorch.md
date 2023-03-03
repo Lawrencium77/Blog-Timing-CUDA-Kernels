@@ -2,9 +2,9 @@
 
 If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed.
 
-However, larger models are both memory intensive and slow. To combat this, there exists a broad range of optimization techniques to minimise training and inference costs. Some focus on efficient implementation of the ubiquitous Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Underlying all of these is the need to accurately measure the cost of each operation in a computational graph.
+However, larger models are memory-hungry and slow. To combat this, there is a range of optimization techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Underlying all of these is the need to time each operation in a computational graph.
 
-In this blog, we present a comprehensive guide to the tips & tricks needed to reliably time operations in PyTorch, whilst avoiding common pitfalls. Getting this right and extracting the best possible performance is critical to Speechmatics' ability to offer game changing ASR accuracy in a real-time setting.
+In this blog, we present a comprehensive guide to the tips & tricks needed to reliably time operations in PyTorch. 
 
 ## Host-Device Synchronization
 
@@ -24,7 +24,7 @@ sync_times = []
 for _ in range(10):
     start_time = perf_counter()
     
-    run_kernel()
+    run_kernel()    # Some kernel
     
     end_time = perf_counter()
     times.append(end_time - start_time)
@@ -42,7 +42,7 @@ for _ in range(10):
 ```
 
 ## CUDA events
-When combining explicit synchronization points with perf_counter, we are not just timing kernel execution. This also includes the overhead associated with the kernel launch, as described above. Additional synchronization may also be undesirable when trying to profile in a production level setup, as we want to avoid skewing results by affecting the overall performance of the system.
+When combining explicit synchronization points with `perf_counter`, we are not just timing kernel execution. This also includes the overhead associated with the kernel launch, as described above. Additional synchronization may also be undesirable when trying to profile in a production level setup, as we want to avoid skewing results by affecting the overall performance of the system.
 
 CUDA Events are a neat way to avoid unnecessary synchronization points and hide kernel launch overhead. Consider the following code:
 

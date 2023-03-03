@@ -7,8 +7,9 @@
 6. [Cache flush](#Cache%20flush)
 7. [Sleep / CUDA graphs](#Sleep%20/%20CUDA%20graphs)
 8. [PyTorch Profiler](#PyTorch%20Profiler)
+9. [References](#References)
 
-## Introduction
+### Introduction
 
 If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed.
 
@@ -16,7 +17,7 @@ However, larger models are memory-hungry and slow. To combat this, there is a ra
 
 Doing so isn't trivial - there is a set of tricks needed to get accurate & repeatable results. In this blog, we present a comprehensive guide to each of these.
 
-## Host-Device Synchronization
+### Host-Device Synchronization
 
 Our starting point is host-device synchronization. 
 
@@ -61,7 +62,7 @@ for _ in range(10):
     sync_times.append(end_time - start_time)
 ```
 
-## CUDA events
+### CUDA events
 When combining explicit synchronization points with `perf_counter`, we don't just time kernel execution. We also include some overhead associated with kernel launch. In addition, using synchronization points may skew results by slowing the overall system.
 
 [CUDA Events](https://pytorch.org/docs/stable/generated/torch.cuda.Event.html#:~:text=CUDA%20events%20are%20synchronization%20markers,or%20exported%20to%20another%20process.) are a neat way to avoid unnecessary synchronization points and hide kernel launch overhead. Here's an example:
@@ -85,7 +86,7 @@ We begin by instantiating two `torch.cuda.Event()` objects. The `record()` m
 
 This image illustrates these ideas:
 
-![](_attachments/Screenshot%202023-03-03%20at%2012.13.23.png)
+![](_attachments/Screenshot%202023-03-03%20at%2012.38.43.png)
 
 ### Warmup steps
 
@@ -165,9 +166,17 @@ def flush_cache():
 
 ### Sleep / CUDA graphs
 
-We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it makes the assumption that there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. When we are timing lightwight kernels that are fast to execute this assumption can break down. This can lead to spurious results which contain launch overhead in the CUDA events delta, and is illustrated in the diagram below.
+We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it makes the assumption that there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. 
 
-Luckily there are solutions, the simplest is to apply backpressure to the command queue to ensure that the the kernel and it's events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue. A naive approach to this would be to launch a sufficiently expensive kernel prior to the events/kernel we are interested in, to create a backlog. A cleaner solution would be to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's `__nanosleep` or `torch.cuda._sleep()`.
+When we are timing lightwight kernels that are fast to execute, this assumption can break down. This can cause spurious results which contain launch overhead in the CUDA events delta, and illustrated here:
+
+![](_attachments/Screenshot%202023-03-03%20at%2012.42.32.png)
+
+Luckily, there are solutions. The simplest is to apply "backpressure" to the command queue. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
+
+![](Screenshot%202023-03-03%20at%2012.47.46.png)
+
+How should we actually do this? A naïve approach is to launch a sufficiently expensive kernel prior to the operations we are interested in, thus creating a backlog. A cleaner solution is to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's `__nanosleep` or `torch.cuda._sleep()`:
 
 ```python
 set_clock_speed()
@@ -194,7 +203,7 @@ for _ in range(10):
 reset_clock_speed()
 ```
 
-A second solution is to use CUDA graphs. This minimizes the launch overhead by joining a series of independent kernel launches into a single kernel. Note that we execute the target kernel multiple times within the graph capture to amortize the cost of the launch overhead.
+A second solution is to use CUDA graphs. This minimizes launch overhead by joining a series of independent kernel launches into a single kernel. Note that we execute the target kernel multiple times within the graph capture to amortize the cost of the launch overhead:
 
 ```python
 set_clock_speed()
@@ -225,9 +234,9 @@ for _ in range(10):
 reset_clock_speed()
 ```
 
-## PyTorch Profiler
+### PyTorch Profiler
 
-## References
+### References
 
 Lilian Weng blog post ([https://lilianweng.github.io/posts/2023-01-10-inference-optimization/](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/))  
 Flash Attention  

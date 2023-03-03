@@ -241,7 +241,7 @@ The example below illustrates a kernel dispatch bug which led to a rogue host-de
 
 ![](_attachments/MicrosoftTeams-image%20(8)%202.png)
 
-### References
+## References
 
 1. Dao, T., Fu, D.Y., Ermon, S., Rudra, A. and Ré, C., 2022. Flashattention: Fast and memory-efficient exact attention with io-awareness. _arXiv preprint arXiv:2205.14135_.
 2. Yao, Z., Aminabadi, R.Y., Zhang, M., Wu, X., Li, C. and He, Y., 2022. Zeroquant: Efficient and affordable post-training quantization for large-scale transformers. _arXiv preprint arXiv:2206.01861_.

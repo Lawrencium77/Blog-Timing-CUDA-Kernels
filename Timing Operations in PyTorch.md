@@ -174,7 +174,7 @@ When we are timing lightwight kernels that are fast to execute, this assumption 
 
 Luckily, there are solutions. The simplest is to apply "backpressure" to the command queue. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
 
-![](_attachments/Screenshot%202023-03-03%20at%2012.47.46.png)
+![[Screenshot 2023-03-03 at 16.38.47.png]]
 
 How should we actually do this? A naïve approach is to launch a sufficiently expensive kernel prior to the operations we are interested in, thus creating a backlog. A cleaner solution is to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's `__nanosleep` or `torch.cuda._sleep()`:
 

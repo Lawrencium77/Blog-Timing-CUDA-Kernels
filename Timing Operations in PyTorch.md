@@ -15,7 +15,7 @@ If we know anything of machine learning in 2023, it is this: bigger is better. 
 
 However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
 
-Doing so isn't trivial - there is a set of tricks needed to get accurate & repeatable results. In this blog, we present a comprehensive guide to each of these.
+Doing so isn't trivial when GPUs are involved - and in this blog, we present a comprehensive guide to the tips and tricks required to get accurate and repeatable results.
 
 ### Host-Device Synchronization
 

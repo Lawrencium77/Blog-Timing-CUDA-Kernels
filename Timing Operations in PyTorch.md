@@ -13,7 +13,7 @@
 
 If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed.
 
-However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Regardless of the approach, timing each operation in a computational graph is essential.
+However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture (FlashAttention[5], ZeroQuant[6]). Others involve algorithmic changes (Pruning, Sparsity [add references here]). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
 
 Doing so isn't trivial - there is a set of tricks needed to get accurate & repeatable results. In this blog, we present a comprehensive guide to each of these.
 

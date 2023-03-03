@@ -237,10 +237,10 @@ reset_clock_speed()
 ### PyTorch Profiler
 As a last point, we have found the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) to be an invaluable tool in spotting unexpected behaviour. If there is a bug in your code that is causing slowdowns, it's often seen when looking at the profiler trace. In particular, we've used it to identify:
 
-* Rogue synchronization points 
 * Lightweight kernels causing spurious results (see [Sleep / CUDA graphs](#Sleep%20/%20CUDA%20graphs))
+* Rogue synchronization points 
 
-The diagram below gives an idea of what this might look like. An host-device synchronization is occurring prior to the launch of a particular kernel (coloured green), which in this case was due to a bug in the kernel dispatch:
+The diagram below gives an idea of what the latter might look like. A host-device synchronization is occurring prior to the launch of a particular kernel (coloured green), which in this case was due to a bug in the kernel dispatch. Note that we see gaps in SM Efficiency associated with kernel launches:
 
 ![](_attachments/MicrosoftTeams-image%20(8)%202.png)
 

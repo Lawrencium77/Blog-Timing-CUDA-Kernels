@@ -9,15 +9,15 @@
 8. [PyTorch Profiler](#PyTorch%20Profiler)
 9. [References](#References)
 
-### Introduction
+## Introduction
 
 If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed.
 
-However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture ([FlashAttention](https://arxiv.org/abs/2205.14135), [ZeroQuant](https://arxiv.org/abs/2206.01861)). Others involve algorithmic changes (Pruning, Sparsity). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
+However, larger models are memory-hungry and slow. To combat this, there is a range of  techniques that minimise training and inference costs. Some focus on efficient implementation of the Transformer architecture , such as FlashAttention ([Dao et al., 2022](https://arxiv.org/abs/2205.14135)) and ZeroQuant ([Yao et al., 2022](https://arxiv.org/abs/2206.01861)). Others involve algorithmic changes (Pruning, Sparsity). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
 
 Doing so isn't trivial when GPUs are involved. In this blog, we present a comprehensive guide to the tips & tricks required to get accurate and repeatable results.
 
-### Host-Device Synchronization
+## Host-Device Synchronization
 
 Our starting point is host-device synchronization. 
 
@@ -62,7 +62,7 @@ for _ in range(10):
     sync_times.append(end_time - start_time)
 ```
 
-### CUDA events
+## CUDA events
 When combining explicit synchronization points with `perf_counter`, we don't just time kernel execution. We also include some overhead associated with kernel launch. Furthermore, using synchronization points may not be desirable when profiling a performance-critical workload due to slowdowns incurred.
 
 [CUDA Events](https://pytorch.org/docs/stable/generated/torch.cuda.Event.html#:~:text=CUDA%20events%20are%20synchronization%20markers,or%20exported%20to%20another%20process.) are a neat way to avoid unnecessary synchronization points and hide kernel launch overhead. Here's an example:
@@ -88,7 +88,7 @@ This image illustrates these ideas:
 
 ![](_attachments/Screenshot%202023-03-03%20at%2012.38.43.png)
 
-### Warmup steps
+## Warmup steps
 
 A further improvement we can make to our above examples is to include warmup steps prior to timed runs. This is needed to discard overheads only incurred at the start of a training or inference run. Examples include:
 
@@ -116,11 +116,11 @@ for _ in range(10):
     times.append(start_event.elapsed_time(end_event))
 ```
 
-### Fixed clocks
+## Fixed clocks
 
 So far, we have focused on making our profiling results accurate. But how can we make them reproducible? GPU clock speed can vary significantly according to limits on temperature and power consumption. As such, fixing the clock can help in this regard. We have found this to be especially important for our work at Speechmatics.
 
-Here's an example of how to implement this in Python. We use a similar approach to that of OpenAI's [Triton](https://triton-lang.org/master/index.html) Domain-Specific Language (DSL) and Deepmind's [AlphaTensor](https://www.nature.com/articles/s41586-022-05172-4) repositories.
+Here's an example of how to implement this in Python. We use a similar approach to that of OpenAI's [Triton](https://triton-lang.org/master/index.html) Domain-Specific Language (DSL) and Deepmind's AlphaTensor ([Fawzi et al., 2022](https://www.nature.com/articles/s41586-022-05172-4)) repositories.
 
 ```python
 import os
@@ -150,7 +150,7 @@ def reset_clock_speed():
 
 One caveat is that selecting a clock speed with `nvidia-smi` doesn't guarantee that your GPU will run at the requested speed. The GPU always retains the ability to decrease the clock rate (throttling) to prevent damage to the hardware. But by setting the clock speed to a value sufficiently below the maximum, we can ensure that throttling is less severe.
 
-### Cache flush
+## Cache flush
 
 Another import consideration is to ensure that the GPU memory caches are cleared between timing calls. This avoids the possibility of repeated kernel executions exploiting cache hits and artificically reducing latency. One simple solution is to pass different input data for each pass, but we need to be careful that we are covering all bases. For example, when profiling a `torch.nn.Linear` it may be insufficient to swap out the input data as some of the (static) weights could still persist in the cache across runs. 
 
@@ -164,7 +164,7 @@ def flush_cache():
     x.zero_() 
  ```
 
-### Sleep / CUDA graphs
+## Sleep / CUDA graphs
 
 We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it makes the assumption that there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. 
 
@@ -234,7 +234,7 @@ for _ in range(10):
 reset_clock_speed()
 ```
 
-### PyTorch Profiler
+## PyTorch Profiler
 Whilst timing kernels in isolation is incredibly useful, it doesn't always tell the whole story. The complementary approach of visually inspecting the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) trace can be an invaluable tool in spotting unexpected behaviour. If there is a problem in your code that is causing slowdowns, it's often seen when looking at the profiler trace. 
 
 The example below illustrates a kernel dispatch bug which led to a rogue host-device synchronization point (coloured green). Note that we see gaps in SM Efficiency associated with kernel launches:

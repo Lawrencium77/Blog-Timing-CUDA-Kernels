@@ -235,7 +235,9 @@ reset_clock_speed()
 ```
 
 ### PyTorch Profiler
-As a last point, we have found the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) to be an invaluable tool in spotting unexpected behaviour. If there is a bug in your code that is causing slowdowns, it's often seen when looking at the profiler trace. In particular, we've used it to identify:
+Whilst timing kernels in isolation is incredibly useful, it doesn't always tell the whole story. The complementary approach of visually inspecting the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) trace can be an invaluable tool in spotting unexpected behaviour. If there is a problem in your code that is causing slowdowns, it's often seen when looking at the profiler trace. 
+
+The example below illustrates a kernel dispatch bug which led to a rogue host-device synchronization point (coloured green). This resulted in gaps of no GPU utilization between blocks of kernels being executed.
 
 * Rogue synchronization points 
 * Lightweight kernels causing spurious results (see [Sleep / CUDA graphs](#Sleep%20/%20CUDA%20graphs))

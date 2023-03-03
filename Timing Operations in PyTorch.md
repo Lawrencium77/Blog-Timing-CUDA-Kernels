@@ -89,13 +89,13 @@ This image illustrates these ideas:
 
 ### Warmup steps
 
-A further improvement we can make to our above examples is to include warmup steps prior to doing timed runs. This is needed to discard overheads only incurred at the start of a training or inference run, for example:
+A further improvement we can make to our above examples is to include warmup steps prior to timed runs. This is needed to discard overheads only incurred at the start of a training or inference run. Examples include:
 
 * Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered
-* On-the-fly microbenchmarking carried out by torch.cudnn.benchmark when selecting optimal convolution kernel for a given input shape
+* On-the-fly microbenchmarking carried out by `torch.cudnn.benchmark` when selecting optimal convolution kernel for a given input shape
 * Lazy loading of kernels into the CUDA context with `CUDA_MODULE_LOADING=LAZY` & CUDA 11.7+
 
-Here's a simple example:
+Here's an example:
 
 ```python
 for _ in range(10):
@@ -117,11 +117,9 @@ for _ in range(10):
 
 ### Fixed clocks
 
-So far, we have focused on making our profiling results accurate. But how can we make them consistent? The clock speed on GPUs can vary significantly according to limits on temperature and power consumption. As such, fixing the clock can substantially improve the reproducibility of our results. We have found this to be especially important for our work at Speechmatics.
+So far, we have focused on making our profiling results accurate. But how can we make them reproducible? GPU clock speed can vary significantly according to limits on temperature and power consumption. As such, fixing the clock can help in this regard. We have found this to be especially important for our work at Speechmatics.
 
-One caveat is that selecting a clock speed with `nvidia-smi` doesn't guarantee that your GPU will run at the requested speed. The GPU always retains the ability to decrease the clock speed (throttling) - this is to prevent damage to the hardware. But by setting the clock speed to some rate sufficiently below the maximum, we can ensure that the level of throttling is less severe.
-
-Here's an example of how to implement this in Python. We use a similar approach to that of OpenAI's Triton DSL [6] and Deepmind's AlphaTensor [7] repositories.
+Here's an example of how to implement this in Python. We use a similar approach to that of OpenAI's Triton Domain-Specific Language (DSL) [6] and Deepmind's AlphaTensor [7] repositories.
 
 ```python
 import os
@@ -149,11 +147,13 @@ def reset_clock_speed():
     subprocess.run(f"sudo nvidia-smi -rgc -i {DEVICE}", shell=True)
 ```
 
+One caveat is that selecting a clock speed with `nvidia-smi` doesn't guarantee that your GPU will run at the requested speed. The GPU always retains the ability to decrease the clock rate (throttling) to prevent damage to the hardware. But by setting the clock speed to a value sufficiently below the maximum, we can ensure that throttling is less severe.
+
 ### Cache flush
 
-Another import consideration is to ensure that the GPU memory caches are cleared between timing calls. This avoids the possibility of repeated kernels executions exploiting cache hits and artificically reducing latency. One simple solution is to pass different input data for each pass, but we need to be careful that we are covering all bases, for example when profiling a `torch.nn.Linear` it may be insufficient to swap out the input data as some of the (static) weights could still persist in the cache across runs. 
+Another import consideration is to ensure that the GPU memory caches are cleared between timing calls. This avoids the possibility of repeated kernel executions exploiting cache hits and artificically reducing latency. One simple solution is to pass different input data for each pass, but we need to be careful that we are covering all bases. For example, when profiling a `torch.nn.Linear` it may be insufficient to swap out the input data as some of the (static) weights could still persist in the cache across runs. 
 
-If the input data are large the constant recreation could also slow down the dev loop, so a more robust solution is to explicitly flush the cache between passes. The example below is based on Triton DSL [6]. It works by writing sufficient data such that any existing cache lines are overwritten, as the L2 cache on Nvidia GPUs uses a write-back policy [7] this means the `zeros` data will initially be written to the L2 cache.
+If the input tensors are large, the constant recreation could also slow down the dev loop. A more robust solution is to explicitly flush the cache between passes. The example below is based on Triton DSL [6]. It works by writing sufficient data such that any existing cache lines are overwritten, as the L2 cache on Nvidia GPUs uses a [write-back policy](https://en.wikipedia.org/wiki/Cache_(computing)#Writing_policies) this means the `zeros` data will initially be written to the L2 cache.
 
 ```python
 # allocating 40MB to match L2 cache size on A100
@@ -234,4 +234,3 @@ Flash Attention
 ZeroQuant
 Triton Language ([https://github.com/openai/triton/blob/ba0198326e280192bff9cd656a0a231b613901fa/python/triton/testing.py#L420](https://github.com/openai/triton/blob/ba0198326e280192bff9cd656a0a231b613901fa/python/triton/testing.py#L420))  
 AlphaTensor ([https://github.com/deepmind/alphatensor/blob/1949163da3bef7e3eb268a3ac015fd1c2dbfc767/benchmarking/run_gpu_benchmark.py#L56](https://github.com/deepmind/alphatensor/blob/1949163da3bef7e3eb268a3ac015fd1c2dbfc767/benchmarking/run_gpu_benchmark.py#L56))
- Caches https://en.wikipedia.org/wiki/Cache_(computing)

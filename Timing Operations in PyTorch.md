@@ -13,7 +13,7 @@
 
 If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed ([Hoffmann et al., 2022](https://arxiv.org/abs/2203.15556)).
 
-However, larger models are both memory-hungry and slow. To combat this, there exists a range of techniques that minimise training and inference costs, two examples being FlashAttention ([Dao et al., 2022](https://arxiv.org/abs/2205.14135)) and ZeroQuant ([Yao et al., 2022](https://arxiv.org/abs/2206.01861)). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
+However, larger models are both memory-hungry and slow. To combat this, there exists a range of techniques that minimise training and inference compute, thus lowering costs. Two examples are FlashAttention ([Dao et al., 2022](https://arxiv.org/abs/2205.14135)) and ZeroQuant ([Yao et al., 2022](https://arxiv.org/abs/2206.01861)). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
 
 Doing so isn't trivial when GPUs are involved. In this blog, we present a comprehensive guide to the tips & tricks required to get accurate and repeatable results.
 

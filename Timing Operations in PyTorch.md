@@ -118,7 +118,7 @@ for _ in range(10):
 
 ## Fixed clocks
 
-So far, we have focused on making our profiling results accurate. But how can we make them reproducible? GPU clock speed can vary significantly according to limits on temperature and power consumption. As such, fixing the clock can help in this regard. We have found this to be especially important for our work at Speechmatics.
+So far, we have focused on making our profiling results accurate. But how can we make them reproducible? GPU clock speed can vary significantly according to limits on temperature and power consumption. As such, fixing the clock enables consistent and reproducible benchmarking.
 
 Here's an example of how to implement this in Python. We use a similar approach to that of OpenAI's [Triton](https://triton-lang.org/master/index.html) Domain-Specific Language (DSL) and Deepmind's AlphaTensor ([Fawzi et al., 2022](https://www.nature.com/articles/s41586-022-05172-4)) repositories.
 

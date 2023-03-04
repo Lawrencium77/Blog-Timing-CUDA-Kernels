@@ -1,0 +1,157 @@
+{
+  "main": {
+    "id": "79a8c4e91bfb6964",
+    "type": "split",
+    "children": [
+      {
+        "id": "6fa05e82e74bc2f9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "523f629387e24d39",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Timing Operations in PyTorch.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "53878afac0f66f7b",
+    "type": "split",
+    "children": [
+      {
+        "id": "ee30261f747ed55e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "902f179f5cd82778",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "d65bb3253bf430af",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "176879d3940ef0a6",
+            "type": "leaf",
+            "state": {
+              "type": "starred",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "b2c72cee1619a0a4",
+    "type": "split",
+    "children": [
+      {
+        "id": "f353330c7e749ca4",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3bad5a12dffa74dc",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Timing Operations in PyTorch.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "4f195ab1b9e1d137",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Timing Operations in PyTorch.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "627f2f80fc52359a",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              }
+            }
+          },
+          {
+            "id": "152db80830e04a34",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Timing Operations in PyTorch.md"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false
+    }
+  },
+  "active": "523f629387e24d39",
+  "lastOpenFiles": [
+    "_attachments/MicrosoftTeams-image (8) 2.png 12-51-17-078.png",
+    "Timing Operations in PyTorch.md",
+    "MicrosoftTeams-image (8) 2.png",
+    "_attachments/Screenshot 2023-03-03 at 16.38.47.png",
+    "_attachments/Screenshot 2023-03-04 at 12.49.37.png"
+  ]
+}

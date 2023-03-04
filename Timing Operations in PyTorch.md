@@ -240,7 +240,7 @@ reset_clock_speed()
 ## PyTorch Profiler
 Whilst timing kernels in isolation is incredibly useful, it doesn't always tell the whole story. The complementary approach of visually inspecting the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) trace can be an invaluable tool in spotting unexpected behaviour. If there is a problem in your code that is causing slowdowns, it's often seen when looking at the profiler trace. 
 
-The example below illustrates a kernel dispatch bug which led to a rogue host-device synchronization point (coloured green). Note that we see gaps in SM Efficiency associated with kernel launches:
+The example below illustrates a kernel dispatch bug which led to a rogue host-device synchronization point (coloured green). Note that we see gaps in Streaming Multiprocessor (SM) Efficiency associated with kernel launches:
 
 ![](_attachments/MicrosoftTeams-image%20(8)%202.png%2012-51-17-078.png)
 

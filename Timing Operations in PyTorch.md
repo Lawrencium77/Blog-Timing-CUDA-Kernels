@@ -11,7 +11,7 @@
 
 ## Introduction
 
-If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed.
+If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed ([Hoffmann et al., 2022](https://arxiv.org/abs/2203.15556)).
 
 However, larger models are both memory-hungry and slow. To combat this, there exists a range of techniques that minimise training and inference costs, two examples being FlashAttention ([Dao et al., 2022](https://arxiv.org/abs/2205.14135)) and ZeroQuant ([Yao et al., 2022](https://arxiv.org/abs/2206.01861)). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
 
@@ -243,6 +243,7 @@ The example below illustrates a kernel dispatch bug which led to a rogue host-de
 
 ## References
 
-1. Dao, T., Fu, D.Y., Ermon, S., Rudra, A. and Ré, C., 2022. Flashattention: Fast and memory-efficient exact attention with io-awareness. _arXiv preprint arXiv:2205.14135_.
-2. Yao, Z., Aminabadi, R.Y., Zhang, M., Wu, X., Li, C. and He, Y., 2022. Zeroquant: Efficient and affordable post-training quantization for large-scale transformers. _arXiv preprint arXiv:2206.01861_.
-3. Fawzi, A., Balog, M., Huang, A., Hubert, T., Romera-Paredes, B., Barekatain, M., Novikov, A., R Ruiz, F.J., Schrittwieser, J., Swirszcz, G. and Silver, D., 2022. Discovering faster matrix multiplication algorithms with reinforcement learning. _Nature_, _610_(7930), pp.47-53.
+1. Hoffmann, J., Borgeaud, S., Mensch, A., Buchatskaya, E., Cai, T., Rutherford, E., Casas, D.D.L., Hendricks, L.A., Welbl, J., Clark, A. and Hennigan, T., 2022. Training compute-optimal large language models. _arXiv preprint arXiv:2203.15556_.
+2. Dao, T., Fu, D.Y., Ermon, S., Rudra, A. and Ré, C., 2022. Flashattention: Fast and memory-efficient exact attention with io-awareness. _arXiv preprint arXiv:2205.14135_.
+3. Yao, Z., Aminabadi, R.Y., Zhang, M., Wu, X., Li, C. and He, Y., 2022. Zeroquant: Efficient and affordable post-training quantization for large-scale transformers. _arXiv preprint arXiv:2206.01861_.
+4. Fawzi, A., Balog, M., Huang, A., Hubert, T., Romera-Paredes, B., Barekatain, M., Novikov, A., R Ruiz, F.J., Schrittwieser, J., Swirszcz, G. and Silver, D., 2022. Discovering faster matrix multiplication algorithms with reinforcement learning. _Nature_, _610_(7930), pp.47-53.

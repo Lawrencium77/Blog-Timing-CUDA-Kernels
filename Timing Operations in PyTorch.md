@@ -25,7 +25,7 @@ PyTorch executes GPU kernels asynchronously. Whilst a CUDA kernel runs on GPU, t
 
 It also has implications for timing GPU operations. A naïve approach may end up timing the kernel *launch* instead of kernel *execution*, like so:
 
-![](_attachments/Screenshot%202023-03-03%20at%2011.50.04.png)
+![](_attachments/Screenshot%202023-03-04%20at%2012.49.37.png)
 
 
 The common solution is to call `torch.cuda.synchronize()` before taking a timing measurement. This waits for all kernels in all CUDA streams to complete:
@@ -168,13 +168,13 @@ def flush_cache():
 
 We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it makes the assumption that there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. 
 
-When we are timing lightwight kernels that are fast to execute, this assumption can break down. This can cause spurious results which contain launch overhead in the CUDA events delta, and illustrated here:
+When we are timing lightwight kernels that are fast to execute, this assumption can break down. This can cause spurious results which contain launch overhead in the CUDA events delta, as illustrated here:
 
 ![](_attachments/Screenshot%202023-03-03%20at%2015.11.21.png)
 
 Luckily, there are solutions. The simplest is to apply "backpressure" to the command queue. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
 
-![[Screenshot 2023-03-03 at 16.38.47.png]]
+![](_attachments/Screenshot%202023-03-03%20at%2016.38.47.png)
 
 How should we actually do this? A naïve approach is to launch a sufficiently expensive kernel prior to the operations we are interested in, thus creating a backlog. A cleaner solution is to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's `__nanosleep` or `torch.cuda._sleep()`:
 
@@ -239,7 +239,7 @@ Whilst timing kernels in isolation is incredibly useful, it doesn't always tell 
 
 The example below illustrates a kernel dispatch bug which led to a rogue host-device synchronization point (coloured green). Note that we see gaps in SM Efficiency associated with kernel launches:
 
-![](_attachments/MicrosoftTeams-image%20(8)%202.png)
+![](_attachments/MicrosoftTeams-image%20(8)%202.png%2012-51-17-078.png)
 
 ## References
 

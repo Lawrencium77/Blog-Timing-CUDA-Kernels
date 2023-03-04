@@ -90,7 +90,7 @@ This image illustrates these ideas:
 
 ## Warmup steps
 
-A further improvement we can make to our above examples is to include warmup steps prior to timed runs. This is needed to discard overheads only incurred at the start of a training or inference run. Examples include:
+A further improvement we can make to our above examples is to include warmup steps prior to timed runs. This is needed to discard the overheads incurred at the start of a training or inference run. Examples include:
 
 * Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered
 * On-the-fly microbenchmarking carried out by `torch.cudnn.benchmark` when selecting optimal convolution kernel for a given input shape

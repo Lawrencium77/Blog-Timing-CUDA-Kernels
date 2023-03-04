@@ -99,6 +99,7 @@ A further improvement we can make to our above examples is to include warmup ste
 Here's an example:
 
 ```python
+# Warmup steps
 for _ in range(10):
     run_kernel() # don't record time
 
@@ -181,8 +182,9 @@ How should we actually do this? A naïve approach is to launch a sufficiently ex
 ```python
 set_clock_speed()
 
+# Warmup steps
 for _ in range(10):
-    run_kernel() # don't record time
+    run_kernel() 
 
 start_event = torch.cuda.Event(enable_timing=True)
 end_event = torch.cuda.Event(enable_timing=True)
@@ -208,8 +210,9 @@ A second solution is to use CUDA graphs. This minimizes launch overhead by joini
 ```python
 set_clock_speed()
 
+# Warmup steps
 for _ in range(10):
-    run_kernel() # don't record time
+    run_kernel()
     
 # capture CUDA graph
 graph = torch.cuda.CUDAGraph()

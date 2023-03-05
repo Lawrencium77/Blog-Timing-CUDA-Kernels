@@ -92,9 +92,10 @@ This image illustrates these ideas:
 
 A further improvement we can make to our above examples is to include warmup steps prior to timed runs. This is needed to discard the overheads incurred at the start of a training or inference run. Examples include:
 
-* Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered
-* On-the-fly microbenchmarking carried out by `torch.cudnn.benchmark` when selecting optimal convolution kernel for a given input shape
-* Lazy loading of kernels into the CUDA context with `CUDA_MODULE_LOADING=LAZY` & CUDA 11.7+
+* Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered;
+* On-the-fly microbenchmarking carried out by `torch.cudnn.benchmark` when selecting optimal convolution kernel for a given input shape;
+* Lazy loading of kernels into the CUDA context with `CUDA_MODULE_LOADING=LAZY` & CUDA 11.7+;
+* Overhead of `cudaMalloc` calls by PyTorch's caching allocator to initially grow the memory pool, ready for later re-use.
 
 Here's an example:
 

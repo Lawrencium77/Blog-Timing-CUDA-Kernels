@@ -11,11 +11,11 @@
 
 ## Introduction
 
-If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed.
+If we know anything of machine learning in 2023, it is this: bigger is better. Give your model more data, parameters, and compute and success is (somewhat) guaranteed ([Hoffmann et al., 2022](https://arxiv.org/abs/2203.15556)).
 
-However, larger models are both memory-hungry and slow. To combat this, there exists a range of techniques that minimise training and inference costs, two examples being FlashAttention ([Dao et al., 2022](https://arxiv.org/abs/2205.14135)) and ZeroQuant ([Yao et al., 2022](https://arxiv.org/abs/2206.01861)). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
+However, larger models are both memory-hungry and slow. To combat this, there exists a range of techniques that minimise training and inference compute, thus lowering costs. Two examples are FlashAttention ([Dao et al., 2022](https://arxiv.org/abs/2205.14135)) and ZeroQuant ([Yao et al., 2022](https://arxiv.org/abs/2206.01861)). Regardless of the approach, the ability to accurately time individual operations in a computational graph is essential.
 
-Doing so isn't trivial when GPUs are involved. In this blog, we present a comprehensive guide to the tips & tricks required to get accurate and repeatable results.
+Doing so isn't trivial when GPUs are involved. In this blog, we present a comprehensive guide to the tips & tricks required to get accurate and repeatable results. Most are specific to PyTorch but the principles discussed apply to CUDA programming in general.
 
 ## Host-Device Synchronization
 
@@ -25,7 +25,7 @@ PyTorch executes GPU kernels asynchronously. Whilst a CUDA kernel runs on GPU, t
 
 It also has implications for timing GPU operations. A naïve approach may end up timing the kernel *launch* instead of kernel *execution*, like so:
 
-![](_attachments/Screenshot%202023-03-03%20at%2011.50.04.png)
+![](_attachments/Screenshot%202023-03-04%20at%2012.49.37.png)
 
 
 The common solution is to call `torch.cuda.synchronize()` before taking a timing measurement. This waits for all kernels in all CUDA streams to complete:
@@ -90,15 +90,17 @@ This image illustrates these ideas:
 
 ## Warmup steps
 
-A further improvement we can make to our above examples is to include warmup steps prior to timed runs. This is needed to discard overheads only incurred at the start of a training or inference run. Examples include:
+A further improvement we can make to our above examples is to include warmup steps prior to timed runs. This is needed to discard the overheads incurred at the start of a training or inference run. Examples include:
 
-* Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered
-* On-the-fly microbenchmarking carried out by `torch.cudnn.benchmark` when selecting optimal convolution kernel for a given input shape
+* Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered.
+* On-the-fly microbenchmarking carried out by `torch.cudnn.benchmark` when selecting optimal convolution kernel for a given input shape.
 * Lazy loading of kernels into the CUDA context with `CUDA_MODULE_LOADING=LAZY` & CUDA 11.7+
+* Overhead of `cudaMalloc` calls by PyTorch's caching allocator to initially grow the memory pool, ready for later re-use.
 
 Here's an example:
 
 ```python
+# Warmup steps
 for _ in range(10):
     run_kernel() # don't record time
 
@@ -118,7 +120,7 @@ for _ in range(10):
 
 ## Fixed clocks
 
-So far, we have focused on making our profiling results accurate. But how can we make them reproducible? GPU clock speed can vary significantly according to limits on temperature and power consumption. As such, fixing the clock can help in this regard. We have found this to be especially important for our work at Speechmatics.
+So far, we have focused on making our profiling results accurate. But how can we make them reproducible? GPU clock speed can vary significantly according to limits on temperature and power consumption. As such, fixing the clock enables consistent and reproducible benchmarking.
 
 Here's an example of how to implement this in Python. We use a similar approach to that of OpenAI's [Triton](https://triton-lang.org/master/index.html) Domain-Specific Language (DSL) and Deepmind's AlphaTensor ([Fawzi et al., 2022](https://www.nature.com/articles/s41586-022-05172-4)) repositories.
 
@@ -168,21 +170,22 @@ def flush_cache():
 
 We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it makes the assumption that there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. 
 
-When we are timing lightwight kernels that are fast to execute, this assumption can break down. This can cause spurious results which contain launch overhead in the CUDA events delta, and illustrated here:
+When we are timing lightwight kernels that are fast to execute, this assumption can break down. Kernel execution may be quicker than kernel launch, meaning the GPU "outruns" the CPU. This can cause spurious results which contain launch overhead in the CUDA events delta, as illustrated here:
 
 ![](_attachments/Screenshot%202023-03-03%20at%2015.11.21.png)
 
-Luckily, there are solutions. The simplest is to apply "backpressure" to the command queue. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
+Luckily, there are solutions. The simplest is to saturate the command queue prior to launching the target kernel. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
 
-![[Screenshot 2023-03-03 at 16.38.47.png]]
+![](_attachments/Screenshot%202023-03-04%20at%2013.21.17.png)
 
 How should we actually do this? A naïve approach is to launch a sufficiently expensive kernel prior to the operations we are interested in, thus creating a backlog. A cleaner solution is to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's `__nanosleep` or `torch.cuda._sleep()`:
 
 ```python
 set_clock_speed()
 
+# Warmup steps
 for _ in range(10):
-    run_kernel() # don't record time
+    run_kernel() 
 
 start_event = torch.cuda.Event(enable_timing=True)
 end_event = torch.cuda.Event(enable_timing=True)
@@ -208,8 +211,9 @@ A second solution is to use CUDA graphs. This minimizes launch overhead by joini
 ```python
 set_clock_speed()
 
+# Warmup steps
 for _ in range(10):
-    run_kernel() # don't record time
+    run_kernel()
     
 # capture CUDA graph
 graph = torch.cuda.CUDAGraph()
@@ -237,12 +241,13 @@ reset_clock_speed()
 ## PyTorch Profiler
 Whilst timing kernels in isolation is incredibly useful, it doesn't always tell the whole story. The complementary approach of visually inspecting the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) trace can be an invaluable tool in spotting unexpected behaviour. If there is a problem in your code that is causing slowdowns, it's often seen when looking at the profiler trace. 
 
-The example below illustrates a kernel dispatch bug which led to a rogue host-device synchronization point (coloured green). Note that we see gaps in SM Efficiency associated with kernel launches:
+The example below illustrates a kernel dispatch bug which led to a rogue host-device synchronization point (coloured green). Note that we see gaps in Streaming Multiprocessor (SM) Efficiency associated with kernel launches:
 
-![](_attachments/MicrosoftTeams-image%20(8)%202.png)
+![](_attachments/MicrosoftTeams-image%20(8)%202.png%2012-51-17-078.png)
 
 ## References
 
-1. Dao, T., Fu, D.Y., Ermon, S., Rudra, A. and Ré, C., 2022. Flashattention: Fast and memory-efficient exact attention with io-awareness. _arXiv preprint arXiv:2205.14135_.
-2. Yao, Z., Aminabadi, R.Y., Zhang, M., Wu, X., Li, C. and He, Y., 2022. Zeroquant: Efficient and affordable post-training quantization for large-scale transformers. _arXiv preprint arXiv:2206.01861_.
-3. Fawzi, A., Balog, M., Huang, A., Hubert, T., Romera-Paredes, B., Barekatain, M., Novikov, A., R Ruiz, F.J., Schrittwieser, J., Swirszcz, G. and Silver, D., 2022. Discovering faster matrix multiplication algorithms with reinforcement learning. _Nature_, _610_(7930), pp.47-53.
+1. Hoffmann, J., Borgeaud, S., Mensch, A., Buchatskaya, E., Cai, T., Rutherford, E., Casas, D.D.L., Hendricks, L.A., Welbl, J., Clark, A. and Hennigan, T., 2022. Training compute-optimal large language models. _arXiv preprint arXiv:2203.15556_.
+2. Dao, T., Fu, D.Y., Ermon, S., Rudra, A. and Ré, C., 2022. Flashattention: Fast and memory-efficient exact attention with io-awareness. _arXiv preprint arXiv:2205.14135_.
+3. Yao, Z., Aminabadi, R.Y., Zhang, M., Wu, X., Li, C. and He, Y., 2022. Zeroquant: Efficient and affordable post-training quantization for large-scale transformers. _arXiv preprint arXiv:2206.01861_.
+4. Fawzi, A., Balog, M., Huang, A., Hubert, T., Romera-Paredes, B., Barekatain, M., Novikov, A., R Ruiz, F.J., Schrittwieser, J., Swirszcz, G. and Silver, D., 2022. Discovering faster matrix multiplication algorithms with reinforcement learning. _Nature_, _610_(7930), pp.47-53.

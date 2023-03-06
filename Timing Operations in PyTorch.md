@@ -82,7 +82,7 @@ torch.cuda.synchronize()
 times = [s.elapsed_time(e) for s, e in zip(start_events, end_events)]
 ```
 
-We begin by instantiating two lists of `torch.cuda.Event()` objects. The `record()` method essentially puts a time stamp in the stream of kernel execution. We do so before and after the operations that we wish to time. At the end of the `for` loop, we must include a `synchronize()` statement before running `s.elapsed_time(e)`. Omitting this means that the CPU would attempt to calculate the elapsed time before the GPU has finished its work, yielding a `RuntimeError`.
+We begin by creating two lists of `torch.cuda.Event()` objects. The `record()` method essentially puts a time stamp in the stream of kernel execution. We do so before and after the operations that we wish to time. At the end of the `for` loop, we must include a `synchronize()` statement before running `s.elapsed_time(e)`. Omitting this means that the CPU would attempt to calculate the elapsed time before the GPU has finished its work, yielding a `RuntimeError`.
 
 This image illustrates these ideas. It shows three kernels being timed for a single iteration:
 

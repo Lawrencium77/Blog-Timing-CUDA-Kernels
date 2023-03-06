@@ -6,7 +6,7 @@
 5. [Fixed clocks](#Fixed%20clocks)
 6. [Cache flush](#Cache%20flush)
 7. [Sleep / CUDA graphs](#Sleep%20/%20CUDA%20graphs)
-8. [PyTorch Profiler](#PyTorch%20Profiler)
+8. [Side Note - PyTorch Profiler](#Side%20Note%20-%20PyTorch%20Profiler)
 9. [References](#References)
 
 ## Introduction
@@ -238,8 +238,12 @@ times = [s.elapsed_time(e) for s, e in zip(start_events, end_events)]
 reset_clock_speed()
 ```
 
-## PyTorch Profiler
-Whilst timing kernels in isolation is incredibly useful, it doesn't always tell the whole story. The complementary approach of visually inspecting the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) trace can be an invaluable tool in spotting unexpected behaviour. If there is a problem in your code that is causing slowdowns, it's often seen when looking at the profiler trace. 
+## Side Note - PyTorch Profiler
+This section isn't strictly related to kernel timing. But we thought it important to include. 
+
+Whilst timing kernels in isolation is incredibly useful, it doesn't always tell the whole story. Fast kernels don't always give speedups for an entire model. For instance, rogue synchronization points can cause slowdowns and do not show up when timing individual operations.
+
+The complementary approach of visually inspecting the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) trace can be an invaluable tool in spotting unexpected behaviour. If there is a problem in your code that is causing slowdowns, it's often seen when looking at the profiler trace. 
 
 The example below illustrates a kernel dispatch bug which led to a rogue host-device synchronization point (coloured green). Note that we see gaps in Streaming Multiprocessor (SM) Efficiency associated with kernel launches:
 

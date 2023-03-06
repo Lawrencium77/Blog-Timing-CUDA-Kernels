@@ -6,8 +6,7 @@
 5. [Fixed clocks](#Fixed%20clocks)
 6. [Cache flush](#Cache%20flush)
 7. [Sleep / CUDA graphs](#Sleep%20/%20CUDA%20graphs)
-8. [Side Note - PyTorch Profiler](#Side%20Note%20-%20PyTorch%20Profiler)
-9. [References](#References)
+8. [References](#References)
 
 ## Introduction
 

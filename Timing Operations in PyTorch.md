@@ -84,9 +84,9 @@ times = [s.elapsed_time(e) for s, e in zip(start_events, end_events)]
 
 We begin by creating two lists of `torch.cuda.Event()` objects. The `record()` method essentially puts a time stamp in the stream of kernel execution. We do so before and after the operations that we wish to time. At the end of the `for` loop, we must include a `synchronize()` statement before running `s.elapsed_time(e)`. Omitting this means that the CPU would attempt to calculate the elapsed time before the GPU has finished its work, yielding a `RuntimeError`.
 
-This image illustrates these ideas. It shows three kernels being timed for a single iteration:
+This image illustrates these ideas for `steps = 2`:
 
-![](_attachments/Screenshot%202023-03-03%20at%2012.38.43.png)
+![](_attachments/Screenshot%202023-03-06%20at%2016.14.00.png)
 
 ## Warmup steps
 
@@ -176,7 +176,7 @@ When we are timing lightwight kernels that are fast to execute, this assumption 
 
 Luckily, there are solutions. The simplest is to saturate the command queue prior to launching the target kernel. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
 
-![](_attachments/Screenshot%202023-03-04%20at%2013.21.17.png)
+![](_attachments/Screenshot%202023-03-06%20at%2016.18.24.png)
 
 How should we actually do this? A naïve approach is to launch a sufficiently expensive kernel prior to the operations we are interested in, thus creating a backlog. A cleaner solution is to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's `__nanosleep` or `torch.cuda._sleep()`:
 

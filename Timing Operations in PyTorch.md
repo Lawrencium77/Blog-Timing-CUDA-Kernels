@@ -239,9 +239,9 @@ reset_clock_speed()
 ```
 
 ## Side Note - PyTorch Profiler
-This section isn't strictly related to kernel timing. But we thought it important to include. 
+Although this section isn't directly about kernel timing, we felt it was important to include.
 
-Whilst timing kernels in isolation is incredibly useful, it doesn't always tell the whole story. Fast kernels don't always give speedups for an entire model. For instance, rogue synchronization points can cause slowdowns and do not show up when timing individual operations.
+Timing kernels in isolation is incredibly useful but doesn't always give a complete understanding of model performance. For instance, rogue synchronization points can cause slowdowns and aren't visible when timing individual operations.
 
 The complementary approach of visually inspecting the [PyTorch Profiler](https://pytorch.org/tutorials/recipes/recipes/profiler_recipe.html) trace can be an invaluable tool in spotting unexpected behaviour. If there is a problem in your code that is causing slowdowns, it's often seen when looking at the profiler trace. 
 

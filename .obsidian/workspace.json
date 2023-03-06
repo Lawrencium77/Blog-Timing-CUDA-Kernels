@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "d2ea11f58fda2d45",
+        "id": "f108969edc812578",
         "type": "tabs",
         "children": [
           {
-            "id": "103cf402b64d3d86",
+            "id": "9b2452a944eaf74d",
             "type": "leaf",
             "state": {
               "type": "markdown",
@@ -69,8 +69,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "b2c72cee1619a0a4",
@@ -147,13 +146,13 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "103cf402b64d3d86",
+  "active": "9b2452a944eaf74d",
   "lastOpenFiles": [
-    "Screenshot 2023-03-06 at 16.27.34.png",
+    "_attachments/Screenshot 2023-03-06 at 16.27.34.png",
+    "Timing Operations in PyTorch.md",
     "_attachments/Screenshot 2023-03-06 at 16.18.24.png",
     "_attachments/Screenshot 2023-03-06 at 16.14.00.png",
     "_attachments/MicrosoftTeams-image (8) 2.png 12-51-17-078.png",
-    "Timing Operations in PyTorch.md",
     "_attachments/Screenshot 2023-03-04 at 13.21.17.png",
     "_attachments/Screenshot 2023-03-04 at 12.49.37.png",
     "_attachments/Screenshot 2023-03-03 at 16.38.47.png",

@@ -85,7 +85,7 @@ We begin by creating two lists of `torch.cuda.Event()` objects. The `record()
 
 This image illustrates these ideas for `steps = 2`:
 
-![](_attachments/Screenshot%202023-03-06%20at%2016.14.00.png)
+![](Screenshot%202023-03-06%20at%2016.27.34.png)
 
 ## Warmup steps
 

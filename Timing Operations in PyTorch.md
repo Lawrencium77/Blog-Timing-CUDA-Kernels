@@ -38,11 +38,12 @@ Here's an example in PyTorch:
 import torch
 from time import perf_counter
 
+steps = 10
 times = []
 sync_times = []
 
 # This won't time the CUDA kernel -  only the launch overhead
-for _ in range(10):
+for _ in range(steps):
     start_time = perf_counter()
     
     run_kernel()    # Some kernel
@@ -52,7 +53,7 @@ for _ in range(10):
     
     
 # This measures what we actually care about
-for _ in range(10):
+for _ in range(steps):
     start_time = perf_counter()
     
     run_kernel()
@@ -68,23 +69,22 @@ When combining explicit synchronization points with `perf_counter`, we don't jus
 [CUDA Events](https://pytorch.org/docs/stable/generated/torch.cuda.Event.html#:~:text=CUDA%20events%20are%20synchronization%20markers,or%20exported%20to%20another%20process.) are a neat way to avoid unnecessary synchronization points and hide kernel launch overhead. Here's an example:
 
 ```python
-start_event = torch.cuda.Event(enable_timing=True)
-end_event = torch.cuda.Event(enable_timing=True)
+steps = 10
+start_events = [torch.cuda.Event(enable_timing=True) for _ in range(steps)]
+end_events = [torch.cuda.Event(enable_timing=True) for _ in range(steps)]
 
-times = []
-for _ in range(10):
-    start_event.record()
-    
-    run_kernel()
-    
-    end_event.record()
-    torch.cuda.synchronize()
-    times.append(start_event.elapsed_time(end_event))
+for i in range(steps):
+    start_events[i].record()    
+    run_kernel()    
+    end_events[i].record()
+
+torch.cuda.synchronize()
+times = [s.elapsed_time(e) for s, e in zip(start_events, end_events)]
 ```
 
-We begin by instantiating two `torch.cuda.Event()` objects. The `record()` method essentially puts a time stamp in the stream of kernel execution. We do so before and after the operations that we wish to time. At the end, we must include a `synchronize()` statement before running `start_time.elapsed_time(end_event)`. Omitting this means that the CPU would attempt to calculate the elapsed time before the GPU has finished its work, yielding a `RuntimeError`.
+We begin by instantiating two lists of `torch.cuda.Event()` objects. The `record()` method essentially puts a time stamp in the stream of kernel execution. We do so before and after the operations that we wish to time. At the end of the `for` loop, we must include a `synchronize()` statement before running `s.elapsed_time(e)`. Omitting this means that the CPU would attempt to calculate the elapsed time before the GPU has finished its work, yielding a `RuntimeError`.
 
-This image illustrates these ideas:
+This image illustrates these ideas. It shows three kernels being timed for a single iteration:
 
 ![](_attachments/Screenshot%202023-03-03%20at%2012.38.43.png)
 
@@ -100,22 +100,22 @@ A further improvement we can make to our above examples is to include warmup ste
 Here's an example:
 
 ```python
+steps = 10
+
 # Warmup steps
-for _ in range(10):
+for _ in range(steps):
     run_kernel() # don't record time
 
-start_event = torch.cuda.Event(enable_timing=True)
-end_event = torch.cuda.Event(enable_timing=True)
- 
-times = []
-for _ in range(10):
-    start_event.record()
-    
-    run_kernel()
-    
-    end_event.record()
-    torch.cuda.synchronize()
-    times.append(start_event.elapsed_time(end_event))
+start_events = [torch.cuda.Event(enable_timing=True) for _ in range(steps)]
+end_events = [torch.cuda.Event(enable_timing=True) for _ in range(steps)]
+
+for i in range(steps):
+    start_events[i].record()    
+    run_kernel()    
+    end_events[i].record()
+
+torch.cuda.synchronize()
+times = [s.elapsed_time(e) for s, e in zip(start_events, end_events)]
 ```
 
 ## Fixed clocks
@@ -183,26 +183,26 @@ How should we actually do this? A naïve approach is to launch a sufficiently ex
 ```python
 set_clock_speed()
 
+steps = 10
+
 # Warmup steps
-for _ in range(10):
+for _ in range(steps):
     run_kernel() 
 
-start_event = torch.cuda.Event(enable_timing=True)
-end_event = torch.cuda.Event(enable_timing=True)
- 
-times = []
-for _ in range(10):
-    flush_cache()
-    
-    torch.cuda._sleep(1_000_000)
-    start_event.record()
-    
-    run_kernel()
-    
-    end_event.record()
-    torch.cuda.synchronize()
-    times.append(start_event.elapsed_time(end_event))
-    
+start_events = [torch.cuda.Event(enable_timing=True) for _ in range(steps)]
+end_events = [torch.cuda.Event(enable_timing=True) for _ in range(steps)]
+
+for i in range(steps):
+	flush_cache()
+	torch.cuda._sleep(1_000_000)
+	
+    start_events[i].record()    
+    run_kernel()    
+    end_events[i].record()
+
+torch.cuda.synchronize()
+times = [s.elapsed_time(e) for s, e in zip(start_events, end_events)]
+
 reset_clock_speed()
 ```
 
@@ -211,30 +211,30 @@ A second solution is to use CUDA graphs. This minimizes launch overhead by joini
 ```python
 set_clock_speed()
 
+steps = 10
+
 # Warmup steps
-for _ in range(10):
+for _ in range(steps):
     run_kernel()
-    
+
+start_events = [torch.cuda.Event(enable_timing=True) for _ in range(steps)]
+end_events = [torch.cuda.Event(enable_timing=True) for _ in range(steps)]
+
 # capture CUDA graph
 graph = torch.cuda.CUDAGraph()
 with torch.cuda.graph(graph):
-    for _ in range(100):
+    for _ in range(steps*10):
         run_kernel()
 
-start_event = torch.cuda.Event(enable_timing=True)
-end_event = torch.cuda.Event(enable_timing=True)
- 
-times = []
-for _ in range(10):
+for i in range(steps):
+    start_events[i].record()  
+    graph.replay()  
+    run_kernel()    
+    end_events[i].record()
 
-    start_event.record()
-    
-    graph.replay()
-    
-    end_event.record()
-    torch.cuda.synchronize()
-    times.append(start_event.elapsed_time(end_event))
-    
+torch.cuda.synchronize()
+times = [s.elapsed_time(e) for s, e in zip(start_events, end_events)]
+
 reset_clock_speed()
 ```
 

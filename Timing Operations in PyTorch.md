@@ -20,7 +20,7 @@ Doing so isn't trivial when GPUs are involved. In this blog, we present a compre
 
 Our starting point is host-device synchronization. 
 
-PyTorch executes GPU kernels asynchronously. Whilst a CUDA kernel runs on GPU, the CPU continues to queue up further kernels behind it. This prevents being bottlenecked by general overhead costs such as launching kernels and those associated with the Python interpreter.
+PyTorch executes GPU kernels asynchronously. Whilst a CUDA kernel runs on GPU, the CPU continues to queue up further kernels behind it. This avoids being bottlenecked by general overhead costs such as launching kernels and those associated with the Python interpreter.
 
 It also has implications for timing GPU operations. A naïve approach may end up timing the kernel *launch* instead of kernel *execution*, like so:
 
@@ -85,11 +85,11 @@ We begin by creating two lists of `torch.cuda.Event()` objects. The `record()
 
 This image illustrates these ideas for `steps = 2`:
 
-![](_attachments/Screenshot%202023-03-06%20at%2016.27.34.png)
+![](Screenshot%202023-03-06%20at%2016.27.34.png)
 
 ## Warmup steps
 
-A further improvement we can make to our above examples is to include warmup steps prior to timed runs. This is needed to discard the overheads incurred at the start of a training or inference run. Examples include:
+A further improvement we can make to our above examples is to include warmup steps prior to timed runs. This is needed to discard the overheads only incurred at the start of a training or inference run. Examples include:
 
 * Optimization passes / codegen applied by PyTorch’s JIT fuser after the first few input tensors are encountered.
 * On-the-fly microbenchmarking carried out by `torch.cudnn.benchmark` when selecting optimal convolution kernel for a given input shape.
@@ -167,7 +167,7 @@ def flush_cache():
 
 ## Sleep / CUDA graphs
 
-We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it assumes there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. 
+We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it assumes that there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. 
 
 When we are timing lightwight kernels that are fast to execute, this assumption can break down. Kernel execution may be quicker than kernel launch, meaning the GPU "outruns" the CPU. This can cause spurious results which contain launch overhead in the CUDA events delta, as illustrated here:
 

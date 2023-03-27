@@ -24,12 +24,11 @@ PyTorch executes GPU kernels asynchronously. While a CUDA kernel runs on GPU, th
 
 It also has implications for timing GPU operations. A naïve approach may end up timing the kernel *launch* instead of kernel *execution*, like so:
 
-![](_attachments/Screenshot%202023-03-04%20at%2012.49.37.png)
-
+![](_attachments/CPU,%20No%20sync.svg)
 
 The common solution is to call `torch.cuda.synchronize()` before taking a timing measurement. This waits for all kernels in all CUDA streams to complete:
 
-![](_attachments/Screenshot%202023-03-03%20at%2011.50.21.png)
+![](_attachments/CPU,%20Sync.svg)
 
 Here's an example in PyTorch:
 
@@ -85,7 +84,7 @@ We begin by creating two lists of `torch.cuda.Event()` objects. The `record()
 
 This image illustrates these ideas for `steps = 2`:
 
-![](Screenshot%202023-03-06%20at%2016.27.34.png)
+![](_attachments/CUDA%20Events.svg)
 
 ## Warmup steps
 
@@ -171,11 +170,11 @@ We previously saw that CUDA events hide the overhead of launching a kernel (the 
 
 When we are timing lightweight kernels that are fast to execute, this assumption can break down. Kernel execution may be quicker than kernel launch, meaning the GPU "outruns" the CPU. This can cause spurious results which contain launch overhead in the CUDA events delta, as illustrated here:
 
-![](_attachments/Screenshot%202023-03-03%20at%2015.11.21.png)
+![](_attachments/Lightweight%20Kernels.svg)
 
 Luckily, there are solutions. The simplest is to saturate the command queue prior to launching the target kernel. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
 
-![](_attachments/Screenshot%202023-03-06%20at%2016.18.24.png)
+![](_attachments/Saturation.svg)
 
 How should we actually do this? A naïve approach is to launch a sufficiently expensive kernel prior to the operations we are interested in, thus creating a backlog. A cleaner solution is to ask the GPU to wait for a fixed number of instruction cycles, either by using CUDA's `__nanosleep` or `torch.cuda._sleep()`:
 

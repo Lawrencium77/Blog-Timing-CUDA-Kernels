@@ -4,19 +4,15 @@
     "type": "split",
     "children": [
       {
-        "id": "f375d43424e11257",
+        "id": "11a7ade33fa9fa5e",
         "type": "tabs",
         "children": [
           {
-            "id": "d30d578094e57023",
+            "id": "571cfddbb5035516",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Timing Operations in PyTorch.md",
-                "mode": "source",
-                "source": false
-              }
+              "type": "empty",
+              "state": {}
             }
           }
         ]
@@ -85,7 +81,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Timing Operations in PyTorch.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +97,6 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Timing Operations in PyTorch.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -124,9 +118,7 @@
             "type": "leaf",
             "state": {
               "type": "outline",
-              "state": {
-                "file": "Timing Operations in PyTorch.md"
-              }
+              "state": {}
             }
           }
         ]
@@ -146,19 +138,18 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "d30d578094e57023",
+  "active": "571cfddbb5035516",
   "lastOpenFiles": [
+    "_attachments/Lightweight Kernels.svg",
+    "Timing Operations in PyTorch.md",
+    "_attachments/Lightweight Kernels (1).svg",
     "_attachments/Screenshot 2023-03-03 at 12.38.43.png",
     "_attachments/CPU, No sync.svg",
     "_attachments/Screenshot 2023-03-03 at 11.50.21.png",
-    "_attachments/Lightweight Kernels.svg",
     "_attachments/Screenshot 2023-03-03 at 11.50.04.png",
-    "Timing Operations in PyTorch.md",
     "_attachments/Saturation.svg",
     "_attachments/CUDA Events.svg",
     "_attachments/CPU, Sync.svg",
-    "_attachments/Screenshot 2023-03-06 at 16.27.34.png",
-    "_attachments/Screenshot 2023-03-06 at 16.18.24.png",
-    "_attachments/Screenshot 2023-03-06 at 16.14.00.png"
+    "_attachments/Screenshot 2023-03-06 at 16.27.34.png"
   ]
 }

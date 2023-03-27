@@ -170,7 +170,7 @@ We previously saw that CUDA events hide the overhead of launching a kernel (the 
 
 When we are timing lightweight kernels that are fast to execute, this assumption can break down. Kernel execution may be quicker than kernel launch, meaning the GPU "outruns" the CPU. This can cause spurious results which contain launch overhead in the CUDA events delta, as illustrated here:
 
-![](_attachments/Lightweight%20Kernels.svg)
+![](Lightweight%20Kernels%20(1).svg)
 
 Luckily, there are solutions. The simplest is to saturate the command queue prior to launching the target kernel. This ensures that the kernel and its events are enqueued together, rather than being executed before the next command has a chance to make it onto the queue:
 

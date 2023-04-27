@@ -1,11 +1,11 @@
 # Table of Contents
 1. [Introduction](#Introduction)
 2. [Host-Device Synchronization](#Host-Device%20Synchronization)
-3. [CUDA events](#CUDA%20events)
-4. [Warmup steps](#Warmup%20steps)
-5. [Fixed clocks](#Fixed%20clocks)
-6. [Cache flush](#Cache%20flush)
-7. [Sleep / CUDA graphs](#Sleep%20/%20CUDA%20graphs)
+3. [CUDA Events](#CUDA%20Events)
+4. [Warmup Steps](#Warmup%20Steps)
+5. [Fixed clocks](#Fixed%20Clocks)
+6. [Cache flush](#Cache%20Flush)
+7. [Sleep / CUDA Graphs](#Sleep%20/%20CUDA%20Graphs)
 8. [References](#References)
 
 ## Introduction
@@ -61,7 +61,7 @@ for _ in range(steps):
     sync_times.append(end_time - start_time)
 ```
 
-## CUDA events
+## CUDA Events
 When combining explicit synchronization points with `perf_counter`, we don't just time kernel execution. We also include some overhead associated with kernel launch. Furthermore, using synchronization points may not be desirable when profiling a performance-critical workload due to slowdowns incurred.
 
 [CUDA Events](https://pytorch.org/docs/stable/generated/torch.cuda.Event.html#:~:text=CUDA%20events%20are%20synchronization%20markers,or%20exported%20to%20another%20process.) are a neat way to avoid unnecessary synchronization points and hide kernel launch overhead. Here's an example:
@@ -86,7 +86,7 @@ This image illustrates these ideas for `steps = 2`:
 
 ![](_attachments/CUDA%20Events.svg)
 
-## Warmup steps
+## Warmup Steps
 
 A further improvement we can make to our above examples is to include warmup steps prior to timed runs. This is needed to discard the overheads only incurred at the start of a training or inference run. Examples include:
 
@@ -116,7 +116,7 @@ torch.cuda.synchronize()
 times = [s.elapsed_time(e) for s, e in zip(start_events, end_events)]
 ```
 
-## Fixed clocks
+## Fixed Clocks
 
 So far, we have focused on making our profiling results accurate. But how can we make them reproducible? GPU clock speed can vary significantly according to limits on temperature and power consumption. As such, fixing the clock enables consistent and reproducible benchmarking.
 
@@ -150,7 +150,7 @@ def reset_clock_speed():
 
 One caveat is that selecting a clock speed with `nvidia-smi` doesn't guarantee that your GPU will run at the requested speed. The GPU always retains the ability to decrease the clock rate (throttling) to prevent damage to the hardware. But by setting the clock speed to a value sufficiently below the maximum, we can ensure that throttling is less severe.
 
-## Cache flush
+## Cache Flush
 
 Another import consideration is to ensure that the GPU memory caches are cleared between timing calls. This avoids the possibility of repeated kernel executions exploiting cache hits and artificically reducing latency. One simple solution is to pass different input data for each pass, but we need to be careful that we are covering all bases. For example, when profiling a `torch.nn.Linear` it may be insufficient to swap out the input data as some of the (static) weights could still persist in the cache across runs. 
 
@@ -164,7 +164,7 @@ def flush_cache():
     x.zero_() 
  ```
 
-## Sleep / CUDA graphs
+## Sleep / CUDA Graphs
 
 We previously saw that CUDA events hide the overhead of launching a kernel (the fixed time between the host launching a kernel and it being executed on the GPU). However, this is not a silver bullet as it assumes that there is no time gap between the kernel in question and the surrounding CUDA events in the command queue. That is, it assumes the preceding CUDA event completes immediately before the kernel is due to be executed, and the following CUDA event starts as soon as the kernel is complete. 
 
